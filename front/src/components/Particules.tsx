@@ -1,7 +1,14 @@
 import React, { useEffect, useRef } from 'react';
-import { Renderer, Camera, Geometry, Program, Mesh, Vec3 } from 'ogl';
+import { Renderer, Camera, Geometry, Program, Mesh } from 'ogl';
+import Star from './Star';
 
-// import './Particles.css';
+interface StarConfig {
+  position: [number, number, number];
+  size?: number;
+  title?: string;
+  onClick?: () => void;
+  background?: string;
+}
 
 interface ParticlesProps {
   particleCount?: number;
@@ -16,11 +23,7 @@ interface ParticlesProps {
   cameraDistance?: number;
   disableRotation?: boolean;
   pixelRatio?: number;
-  enableSpecialStar?: boolean;
-  specialStarPosition?: [number, number, number];
-  specialStarSize?: number;
-  onSpecialStarClick?: () => void;
-  specialStarTitle?: string;
+  stars?: StarConfig[];
   className?: string;
 }
 
@@ -104,31 +107,26 @@ const fragment = /* glsl */ `
     }
   }
 `;
-
 const Particles: React.FC<ParticlesProps> = ({
   particleCount = 200,
   particleSpread = 10,
   speed = 0.1,
   particleColors,
-  moveParticlesOnHover = false,
+  moveParticlesOnHover = true,
   particleHoverFactor = 1,
   alphaParticles = false,
   particleBaseSize = 100,
   sizeRandomness = 1,
   cameraDistance = 20,
-  disableRotation = false,
+  disableRotation = true,
   pixelRatio = 1,
-  enableSpecialStar = false,
-  specialStarPosition = [0.25, -0.35, 0],
-  specialStarSize = 22,
-  onSpecialStarClick,
-  specialStarTitle,
+  stars = [],
   className
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const specialStarRef = useRef<HTMLButtonElement>(null);
+  const cameraRef = useRef<Camera | null>(null);
+  const particlesMeshRef = useRef<Mesh | null>(null);
   const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [specialStarX, specialStarY, specialStarZ] = specialStarPosition;
 
   useEffect(() => {
     const container = containerRef.current;
@@ -145,6 +143,7 @@ const Particles: React.FC<ParticlesProps> = ({
 
     const camera = new Camera(gl, { fov: 15 });
     camera.position.set(0, 0, cameraDistance);
+    cameraRef.current = camera;
 
     const resize = () => {
       const width = container.clientWidth;
@@ -208,40 +207,7 @@ const Particles: React.FC<ParticlesProps> = ({
     });
 
     const particles = new Mesh(gl, { mode: gl.POINTS, geometry, program });
-    const specialStarLocal = new Vec3(specialStarX, specialStarY, specialStarZ);
-    const specialStarWorld = new Vec3();
-    const specialStarClip = new Vec3();
-
-    const updateSpecialStarPosition = () => {
-      const specialStar = specialStarRef.current;
-      if (!enableSpecialStar || !specialStar) {
-        return;
-      }
-
-      specialStarWorld.copy(specialStarLocal).applyMatrix4(particles.worldMatrix);
-      specialStarClip.copy(specialStarWorld).applyMatrix4(camera.viewMatrix).applyMatrix4(camera.projectionMatrix);
-
-      const isOutOfView =
-        specialStarClip.x < -1 ||
-        specialStarClip.x > 1 ||
-        specialStarClip.y < -1 ||
-        specialStarClip.y > 1 ||
-        specialStarClip.z < -1 ||
-        specialStarClip.z > 1;
-
-      if (isOutOfView) {
-        specialStar.style.opacity = '0';
-        specialStar.style.pointerEvents = 'none';
-        return;
-      }
-
-      const x = ((specialStarClip.x + 1) * 0.5) * container.clientWidth;
-      const y = ((1 - specialStarClip.y) * 0.5) * container.clientHeight;
-
-      specialStar.style.opacity = '1';
-      specialStar.style.pointerEvents = 'auto';
-      specialStar.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%)`;
-    };
+    particlesMeshRef.current = particles;
 
     let animationFrameId: number;
     let lastTime = performance.now();
@@ -268,10 +234,6 @@ const Particles: React.FC<ParticlesProps> = ({
         particles.rotation.y = Math.cos(elapsed * 0.0005) * 0.15;
         particles.rotation.z += 0.01 * speed;
       }
-
-      camera.updateMatrixWorld();
-      particles.updateMatrixWorld();
-      updateSpecialStarPosition();
 
       renderer.render({ scene: particles, camera });
     };
@@ -301,40 +263,23 @@ const Particles: React.FC<ParticlesProps> = ({
     cameraDistance,
     disableRotation,
     pixelRatio
-    ,
-    enableSpecialStar,
-    specialStarX,
-    specialStarY,
-    specialStarZ
   ]);
 
   return (
-    <div ref={containerRef} className={`particles-container ${className ?? ''}`}>
-      {enableSpecialStar ? (
-        <button
-          ref={specialStarRef}
-          type="button"
-          aria-label={specialStarTitle || "Etoile interactive"}
-          title={specialStarTitle || "Etoile interactive"}
-          onClick={onSpecialStarClick}
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: `${specialStarSize}px`,
-            height: `${specialStarSize}px`,
-            borderRadius: '9999px',
-            border: 'none',
-            background: 'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(255,244,196,0.95) 45%, rgba(255,232,120,0.5) 70%, rgba(255,232,120,0) 100%)',
-            boxShadow: '0 0 18px rgba(255, 236, 140, 0.85)',
-            cursor: 'pointer',
-            zIndex: 2,
-            transform: 'translate(-9999px, -9999px)',
-            opacity: 0,
-            transition: 'opacity 160ms ease'
-          }}
+    <div ref={containerRef} className={`particles-container ${className}`}>
+      {stars.map((star, index) => (
+        <Star
+          key={index}
+          position={star.position}
+          size={star.size}
+          title={star.title}
+          onClick={star.onClick}
+          particlesMeshRef={particlesMeshRef}
+          cameraRef={cameraRef}
+          containerRef={containerRef}
+          background={star.background}
         />
-      ) : null}
+      ))}
     </div>
   );
 };
