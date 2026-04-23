@@ -5,19 +5,18 @@ type DrawerLeftProps = {
   onClose: () => void;
 };
 
-export function DrawerLeft({ isOpen, onClose }: DrawerLeftProps) {
+export default function DrawerLeft({ isOpen, onClose }: DrawerLeftProps) {
   if (!isOpen) {
     return null;
   }
 
   return (
     <>
-      <Drawer open={isOpen} onClose={onClose} position="left">
-        <DrawerHeader title="About me" />
+      <Drawer open={isOpen} onClose={onClose} position="left" className="bg-white/10 h-screen">
         <DrawerItems>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
-            Contenu About Me.
-          </p>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <label className="text-white text-xl">Hi, I'm vSpyke,</label>
+          </div>
         </DrawerItems>
       </Drawer>
     </>

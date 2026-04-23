@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Renderer, Camera, Geometry, Program, Mesh } from 'ogl';
 import Star from './Star';
 
-interface StarConfig {
+export interface StarConfig {
   position: [number, number, number];
   size?: number;
   title?: string;

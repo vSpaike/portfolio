@@ -1,20 +1,13 @@
-import Particles from '../components/Particules';
+import Background from '../components/Background';
 import NavBar from '../components/NavBar';
-import {DrawerLeft} from '../components/AboutMe';
+import DrawerLeft from '../components/AboutMe';
 import { useState } from 'react';
 
-function Background({
-  onEarthClick,
-  particlesInteractive
-}: {
-  onEarthClick: () => void;
-  particlesInteractive: boolean;
-}) {
+function BackgroundWithStar({isDrawerOpen, onOpenDrawer}: {isDrawerOpen: boolean; onOpenDrawer: () => void;}) {
   return (  
-    <div className="fixed inset-0 z-0 bg-black">
-    <Particles
-      interactionEnabled={particlesInteractive}
-      stars={[
+      <Background
+        particlesInteractive={!isDrawerOpen}
+        backgroundStar={[
         {
           position: [0.5, -1.5, -3],
           size: 36,
@@ -34,8 +27,9 @@ function Background({
           position: [1.3, 0.2, 6],
           size: 52,
           title: "Terre",
-          onClick: onEarthClick,
-          background: "rgba(78,148,255,1) 0%, rgba(58,124,224,0.95) 35%, rgba(74,178,109,0.65) 65%, rgba(74,178,109,0) 100%"        },
+          onClick: onOpenDrawer,
+          background: "rgba(78,148,255,1) 0%, rgba(58,124,224,0.95) 35%, rgba(74,178,109,0.65) 65%, rgba(74,178,109,0) 100%"        
+        },
         {
           // Contact
           position: [-0.3, 2.3, -10],
@@ -45,27 +39,34 @@ function Background({
           background: "rgba(218,107,77,1) 0%, rgba(192,83,56,0.95) 45%, rgba(143,52,36,0.5) 75%, rgba(143,52,36,0) 100%"
         }
       ]}
-    />
-  </div>
+      />
   )
 }
 
-function App(){
+function Home(){
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+  const handleOpenDrawer = () => {
+    setIsDrawerOpen(true);
+  };
+
+  const handleCloseDrawer = () => {
+    setIsDrawerOpen(false);
+  };
 
   return (
     <div className="relative min-h-screen ">
-      <Background
-        onEarthClick={() => setIsDrawerOpen(true)}
-        particlesInteractive={!isDrawerOpen}
+      <BackgroundWithStar
+        isDrawerOpen={isDrawerOpen}
+        onOpenDrawer={handleOpenDrawer}
       />
-      <DrawerLeft isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)} />
+      <DrawerLeft isOpen={isDrawerOpen} onClose={handleCloseDrawer} />
       <div className="relative z-20">
-        <a className="text-white px-4 inline-block py-5 text-2xl hover:text-gray-400" href="./">vSpyke</a>
+        {/* <a className="text-white px-4 inline-block py-5 text-2xl hover:text-gray-400" href="./">vSpyke</a> */}
         <NavBar />
       </div>
     </div>
   )
 }
 
-export default App
+export default Home;
