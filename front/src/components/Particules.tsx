@@ -25,9 +25,15 @@ interface ParticlesProps {
   pixelRatio?: number;
   stars?: StarConfig[];
   className?: string;
+  interactionEnabled?: boolean;
 }
 
 const defaultColors: string[] = ['#ffffff', '#ffffff', '#ffffff'];
+const NORMAL_HOVER_DAMPING = 0.09;
+const MENU_EXIT_HOVER_DAMPING = 0.015;
+const MENU_EXIT_SMOOTHING_MS = 1200;
+
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
 const hexToRgb = (hex: string): [number, number, number] => {
   hex = hex.replace(/^#/, '');
@@ -108,9 +114,9 @@ const fragment = /* glsl */ `
   }
 `;
 const Particles: React.FC<ParticlesProps> = ({
-  particleCount = 200,
+  particleCount = 320,
   particleSpread = 10,
-  speed = 0.1,
+  speed = 0.12,
   particleColors,
   moveParticlesOnHover = true,
   particleHoverFactor = 1,
@@ -121,12 +127,38 @@ const Particles: React.FC<ParticlesProps> = ({
   disableRotation = true,
   pixelRatio = 1,
   stars = [],
-  className
+  className,
+  interactionEnabled = true
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const cameraRef = useRef<Camera | null>(null);
   const particlesMeshRef = useRef<Mesh | null>(null);
   const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const hasMouseRef = useRef(false);
+  const interactionEnabledRef = useRef(interactionEnabled);
+  const wasInteractionEnabledRef = useRef(interactionEnabled);
+  const menuExitSmoothStartRef = useRef(0);
+  const menuExitSmoothUntilRef = useRef(0);
+  const menuExitPendingRef = useRef(false);
+
+  useEffect(() => {
+    const wasEnabled = wasInteractionEnabledRef.current;
+    interactionEnabledRef.current = interactionEnabled;
+
+    if (!wasEnabled && interactionEnabled) {
+      hasMouseRef.current = false;
+      menuExitPendingRef.current = true;
+    }
+
+    if (!interactionEnabled) {
+      hasMouseRef.current = false;
+      menuExitPendingRef.current = false;
+      menuExitSmoothStartRef.current = 0;
+      menuExitSmoothUntilRef.current = 0;
+    }
+
+    wasInteractionEnabledRef.current = interactionEnabled;
+  }, [interactionEnabled]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -138,6 +170,7 @@ const Particles: React.FC<ParticlesProps> = ({
       alpha: true
     });
     const gl = renderer.gl;
+    gl.canvas.style.pointerEvents = 'none';
     container.appendChild(gl.canvas);
     gl.clearColor(0, 0, 0, 0);
 
@@ -155,10 +188,23 @@ const Particles: React.FC<ParticlesProps> = ({
     resize();
 
     const handleMouseMove = (e: MouseEvent) => {
+      if (!interactionEnabledRef.current) {
+        return;
+      }
+
       const rect = container.getBoundingClientRect();
       const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
       const y = -(((e.clientY - rect.top) / rect.height) * 2 - 1);
+
+      if (menuExitPendingRef.current) {
+        const now = performance.now();
+        menuExitSmoothStartRef.current = now;
+        menuExitSmoothUntilRef.current = now + MENU_EXIT_SMOOTHING_MS;
+        menuExitPendingRef.current = false;
+      }
+
       mouseRef.current = { x, y };
+      hasMouseRef.current = true;
     };
 
     if (moveParticlesOnHover) {
@@ -221,13 +267,28 @@ const Particles: React.FC<ParticlesProps> = ({
 
       program.uniforms.uTime.value = elapsed * 0.001;
 
-      if (moveParticlesOnHover) {
-        particles.position.x = -mouseRef.current.x * particleHoverFactor;
-        particles.position.y = -mouseRef.current.y * particleHoverFactor;
-      } else {
-        particles.position.x = 0;
-        particles.position.y = 0;
+      const hoverActive =
+        moveParticlesOnHover && interactionEnabledRef.current && hasMouseRef.current;
+      const targetX = hoverActive
+        ? -mouseRef.current.x * particleHoverFactor
+        : particles.position.x;
+      const targetY = hoverActive
+        ? -mouseRef.current.y * particleHoverFactor
+        : particles.position.y;
+
+      let hoverDamping = NORMAL_HOVER_DAMPING;
+      if (menuExitSmoothUntilRef.current > 0 && t < menuExitSmoothUntilRef.current) {
+        const smoothingProgress = clamp01(
+          (t - menuExitSmoothStartRef.current) / MENU_EXIT_SMOOTHING_MS
+        );
+        const easing = 1 - Math.pow(1 - smoothingProgress, 3);
+        hoverDamping =
+          MENU_EXIT_HOVER_DAMPING +
+          (NORMAL_HOVER_DAMPING - MENU_EXIT_HOVER_DAMPING) * easing;
       }
+
+      particles.position.x += (targetX - particles.position.x) * hoverDamping;
+      particles.position.y += (targetY - particles.position.y) * hoverDamping;
 
       if (!disableRotation) {
         particles.rotation.x = Math.sin(elapsed * 0.0002) * 0.1;
