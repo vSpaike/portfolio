@@ -1,5 +1,9 @@
+import img_Portfolio from "../assets/portfolio_img.jpg"
+import img_Button from "../assets/github-icon.svg"
+
 import Background from "../components/Background"
 import NavBar from "../components/NavBar"
+import Card from "../components/Card"
 
 function Projects(){
     return (
@@ -8,28 +12,37 @@ function Projects(){
             particlesInteractive={false}
             />
             <NavBar />
-            <div className="absolute inset-6 backdrop-blur-sm border border-white/10 rounded-xl shadow-xl">
-               <div className="card bg-base-100 w-96 shadow-sm">
-                    <figure>
-                        <img
-                        src="https://img.daisyui.com/images/stock/photo-1606107557195-0e29a4b5b4aa.webp"
-                        alt="Shoes" />
-                    </figure>
-                    <div className="card-body">
-                        <h2 className="card-title">
-                        Portfolio
-                        </h2>
-                            <p>A card component has a figure, a body part, and inside body there are title and actions parts</p>
-                            <div className="card-actions justify-end">
-                            <div className="badge badge-outline">Fashion</div>
-                            <div className="badge badge-outline">Products</div>
-                        </div>
-                        <div className="card-actions">
-                            <button className="btn btn-primary">Buy Now</button>
-                        </div>
-                    </div>
+            <div className="absolute inset-6 backdrop-blur-sm border border-white/10 rounded-xl shadow-xl overflow-y-auto p-16">
+                <div className="grid grid-cols-2 gap-x-32 gap-y-32 max-w-4xl mx-auto">                    
+                    <Card 
+                        img={img_Portfolio}
+                        img_button={img_Button}
+                        description=""
+                        title="Multi-Agent pentest (en cours)"
+                        list_badge={['test','deux']}
+                        button_link="https://github.com/vSpaike/multi-agents-pentest"
+                    />
+
+                    <Card 
+                        img={img_Portfolio}
+                        img_button={img_Button}
+                        description=""
+                        title="Portfolio"
+                        list_badge={['test','deux']}
+                        button_link="https://github.com/vSpaike/portfolio"
+                    />
+
+                    <Card 
+                        img={img_Portfolio}
+                        alt_img="Blockchain"
+                        img_button={img_Button}
+                        description=""
+                        title="Todo list blockchain"
+                        list_badge={['test','deux']}
+                        button_link="https://github.com/vSpaike/blockchain-todo-list"
+                    />
                 </div>
-            </div> 
+            </div>
         </div>       
     )
 }

@@ -62,7 +62,7 @@ function Home(){
       />
       <DrawerLeft isOpen={isDrawerOpen} onClose={handleCloseDrawer} />
       <div className="relative z-20">
-        {/* <a className="text-white px-4 inline-block py-5 text-2xl hover:text-gray-400" href="./">vSpyke</a> */}
+        <a className="text-white px-4 inline-block py-5 text-2xl hover:text-gray-400" href="./">vSpyke</a>
         <NavBar />
       </div>
     </div>
